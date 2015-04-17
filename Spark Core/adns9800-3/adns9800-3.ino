@@ -156,8 +156,9 @@ void adns_upload_firmware()
 
   // send all bytes of the firmware
   unsigned char c;
-  for(int i = 0; i < firmware_length; i++){
-  //  c = (unsigned char)pgm_read_byte(firmware_data + i);
+  for(int i = 0; i < firmware_length; i++)
+  {
+    // c = (unsigned char)pgm_read_byte(firmware_data + i);
     c = firmware_data[i];
     SPI.transfer(c);
     delayMicroseconds(15);
@@ -230,7 +231,8 @@ void adns_frame_capture()
 }
 
 
-void performStartup(void){
+void performStartup(void)
+{
   adns_com_end(); // ensure that the serial port is reset
   adns_com_begin(); // ensure that the serial port is reset
   adns_com_end(); // ensure that the serial port is reset
@@ -255,33 +257,37 @@ void performStartup(void){
   delay(1);
 
   Serial.println("Optical Chip Initialized");
-  }
+}
 
-void UpdatePointer(void){
-  if(initComplete==9){
+void UpdatePointer(void)
+{
+  if(initComplete==9)
+  {
     xydat[4] = (byte)adns_read_reg(REG_Motion);
-    if(bitRead(xydat[4],7)){
-        xydat[0] = (byte)adns_read_reg(REG_Delta_X_L);
-        xydat[1] = (byte)adns_read_reg(REG_Delta_Y_L);
-        xydat[2] = (byte)adns_read_reg(REG_Delta_X_H);
-        xydat[3] = (byte)adns_read_reg(REG_Delta_Y_H);
-        xydelt[0] = (int16_t)(xydat[2]<<8) | xydat[0];
-        xydelt[1] = (int16_t)(xydat[3]<<8) | xydat[1];
+    if(bitRead(xydat[4],7))
+    {
+      xydat[0] = (byte)adns_read_reg(REG_Delta_X_L);
+      xydat[1] = (byte)adns_read_reg(REG_Delta_Y_L);
+      xydat[2] = (byte)adns_read_reg(REG_Delta_X_H);
+      xydat[3] = (byte)adns_read_reg(REG_Delta_Y_H);
+      xydelt[0] = (int16_t)(xydat[2]<<8) | xydat[0];
+      xydelt[1] = (int16_t)(xydat[3]<<8) | xydat[1];
     }
-    else{
-         //Serial.println("No motion detected");
-        xydat[0] = 0;
-        xydat[1] = 0;
-        xydat[2] = 0;
-        xydat[3] = 0;
-        xydelt[0] = 0;
-        xydelt[1] = 0;
-    }
-    
+    else
+    {
+      //Serial.println("No motion detected");
+      xydat[0] = 0;
+      xydat[1] = 0;
+      xydat[2] = 0;
+      xydat[3] = 0;
+      xydelt[0] = 0;
+      xydelt[1] = 0;
     }
   }
+}
 
-void dispRegisters(void){
+void dispRegisters(void)
+{
   int oreg[7] = {
     0x00,0x3F,0x2A,0x02  };
   char* oregname[] = {
@@ -291,7 +297,8 @@ void dispRegisters(void){
   digitalWrite(ncs,LOW);
 
   int rctr=0;
-  for(rctr=0; rctr<4; rctr++){
+  for(rctr=0; rctr<4; rctr++)
+  {
     SPI.transfer(oreg[rctr]);
     delay(1);
     Serial.println("---");
@@ -306,54 +313,59 @@ void dispRegisters(void){
 }
 
 
-int convTwosComp(int b){
+int convTwosComp(int b)
+{
   //Convert from 2's complement
-  if(b & 0x80){
+  if(b & 0x80)
+  {
     b = -1 * ((b ^ 0xff) + 1);
-    }
-  return b;
   }
+  return b;
+}
 
-void loop() {
-
+void loop()
+{
   /*
   currTime = millis();
 
-  if(currTime > timer){
+  if(currTime > timer)
+  {
     Serial.println(testctr++);
     timer = currTime + 2000;
-    }
+  }
 
-  if(currTime > pollTimer){
+  if(currTime > pollTimer)
+  {
     UpdatePointer();
     xydat[0] = convTwosComp(xydat[0]);
     xydat[1] = convTwosComp(xydat[1]);
-      if(xydat[0] != 0 || xydat[1] != 0){
+      if(xydat[0] != 0 || xydat[1] != 0)
+      {
         Serial.print("x = ");
         Serial.print(xydat[0]);
         Serial.print(" | ");
         Serial.print("y = ");
         Serial.println(xydat[1]);
-        }
+      }
     pollTimer = currTime + 10;
-    }
+  }
     */
     
 
-    UpdatePointer();
+  UpdatePointer();
     
-    //Serial.print("X = ");
-    Serial.print(xydelt[0]);
-   // Serial.print(" Y = ");
-    Serial.print(xydelt[1]);
+  //Serial.print("X = ");
+  Serial.print(xydelt[0]);
+  //Serial.print(" Y = ");
+  Serial.print(xydelt[1]);
     
     
-   // Serial.print(" Time elapsed = ");
-    Serial.println(millis()-timer);
-    timer = millis();
+  //Serial.print(" Time elapsed = ");
+  Serial.println(millis()-timer);
+  timer = millis();
 
     
-    //adns_frame_capture();
+  //adns_frame_capture();
     
 
 }
