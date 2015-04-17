@@ -1,3 +1,4 @@
+#include <SPI.h>
 #include "ADNS9800_SROM_A4.h"
 // Registers
 #define REG_Product_ID                           0x00
@@ -56,17 +57,18 @@ unsigned long pollTimer;
 volatile byte xydat[5];
 int16_t xydelt[2];
 volatile byte movementflag=0;
-const int ncs = D2;
+const int ncs = 51; // Arduino pin that connects to SS on the ADNS
 
-unsigned short firmware_length = 3070;
 extern unsigned char firmware_data[];
+unsigned short firmware_length = 3070; // more robust: firmware_length = sizeof(firmware_data)/sizeof(firmware_data[0])
 
 
-void setup() {
+void setup()
+{
   Serial.begin(9600);
   delay(5000);
 
-  pinMode (ncs, OUTPUT);
+  pinMode(ncs, OUTPUT);
 
   //attachInterrupt(0, UpdatePointer, FALLING);
 
@@ -80,22 +82,32 @@ void setup() {
   dispRegisters();
   initComplete=9;
   Serial.println("Setup Complete");
-
+  
+  delay(1000000);
 }
 
-void adns_com_begin(){
-  digitalWrite(ncs, LOW);
+// initiate communication between Arduino and ADNS
+void adns_com_begin()
+{
+  // from http://www.arduino.cc/en/Reference/SPI:
+  // When a device's Slave Select (SS) pin is LOW, it communicates with the master
+  digitalWrite(ncs, LOW); 
 }
 
-void adns_com_end(){
+// end communication between Arduino and ADNS
+void adns_com_end()
+{
+  // from from http://www.arduino.cc/en/Reference/SPI:
+  // When a device's Slave Select (SS) pin is HIGH, ADNS ignores Arduino
   digitalWrite(ncs, HIGH);
 }
 
-byte adns_read_reg(byte reg_addr){
+byte adns_read_reg(byte reg_addr)
+{
   adns_com_begin();
 
-  // send adress of the register, with MSBit = 0 to indicate it's a read
-  SPI.transfer(reg_addr & 0x7f );
+  // send address of the register, with MSBit = 0 to indicate it's a read
+  SPI.transfer(reg_addr & 0x7f); // 0x7f = B01111111 (where the leading 'B' indicates binary)
   delayMicroseconds(100); // tSRAD
   // read data
   byte data = SPI.transfer(0);
@@ -107,12 +119,13 @@ byte adns_read_reg(byte reg_addr){
   return data;
 }
 
-void adns_write_reg(byte reg_addr, byte data){
+void adns_write_reg(byte reg_addr, byte data)
+{
   adns_com_begin();
 
-  //send adress of the register, with MSBit = 1 to indicate it's a write
-  SPI.transfer(reg_addr | 0x80 );
-  //sent data
+  //send address of the register, with MSBit = 1 to indicate it's a write
+  SPI.transfer(reg_addr | 0x80 ); // 0X80 = B10000000
+  //send data
   SPI.transfer(data);
 
   delayMicroseconds(20); // tSCLK-NCS for write operation
@@ -120,7 +133,8 @@ void adns_write_reg(byte reg_addr, byte data){
   delayMicroseconds(100); // tSWW/tSWR (=120us) minus tSCLK-NCS. Could be shortened, but is looks like a safe lower bound
 }
 
-void adns_upload_firmware(){
+void adns_upload_firmware()
+{
   // send the firmware to the chip, cf p.18 of the datasheet
   Serial.println("Uploading firmware...");
   // set the configuration_IV register in 3k firmware mode
@@ -149,9 +163,10 @@ void adns_upload_firmware(){
     delayMicroseconds(15);
   }
   adns_com_end();
-  }
+}
 
-void adns_frame_capture(){  //
+void adns_frame_capture()
+{  //
   // download a frame of data, cf p.18 of the datasheet
   Serial.println("Frame capture...");
   // Reset the chip by writing 0x5a to Power_Up_Reset register (address 0x3a)
@@ -168,52 +183,51 @@ void adns_frame_capture(){  //
   //adns_write_reg(REG_LASER_CTRL0, laser_ctrl0 & 0xf0 );
   
   //Write 0x93 to Frame_Capture register.
-  while(0<1){
-      adns_write_reg(REG_Frame_Capture, 0x93);
-      //Write 0xc5 to Frame_Capture register.
-      adns_write_reg(REG_Frame_Capture, 0xc5);
+  while(0<1)
+  {
+    adns_write_reg(REG_Frame_Capture, 0x93);
+    //Write 0xc5 to Frame_Capture register.
+    adns_write_reg(REG_Frame_Capture, 0xc5);
 
-      // wait for more than one frame period
-      delay(10); // assume that the frame rate is as low as 100fps... even if it should never be that low
+    // wait for more than one frame period
+    delay(10); // assume that the frame rate is as low as 100fps... even if it should never be that low
 
-      //Read bit 0 of Motion register (0x02)
-     // byte data2 = adns_read_reg(REG_Pixel_Burst);
-     // Serial.println(data2);
-     Serial.print("x");
-     //Serial.println(i);
+    //Read bit 0 of Motion register (0x02)
+    // byte data2 = adns_read_reg(REG_Pixel_Burst);
+    // Serial.println(data2);
+    Serial.print("x");
+    //Serial.println(i);
 
-      adns_com_begin();
-      // send adress of the register, with MSBit = 0 to indicate it's a read
-      SPI.transfer(REG_Pixel_Burst & 0x7f );
-      delayMicroseconds(100); // tSRAD
-      // read data
-      //byte data = SPI.transfer(0); // Check for first pixel by reading bit zero of Motion register. If = 1, first pixel is available.
-      //Serial.println(data);
+    adns_com_begin();
+    // send adress of the register, with MSBit = 0 to indicate it's a read
+    SPI.transfer(REG_Pixel_Burst & 0x7f );
+    delayMicroseconds(100); // tSRAD
+    // read data
+    //byte data = SPI.transfer(0); // Check for first pixel by reading bit zero of Motion register. If = 1, first pixel is available.
+    //Serial.println(data);
 
-      //delayMicroseconds(15); // tSCLK-NCS for read operation is 120ns
+    //delayMicroseconds(15); // tSCLK-NCS for read operation is 120ns
 
-     // SPI.transfer(0x64 & 0x7f );
-      for(int i = 0; i < 30; i++){
-      //  delayMicroseconds(100);
-        for(int i = 0; i < 29; i++){
-          byte data = SPI.transfer(0);
-          Serial.print(data);
-          Serial.print(",");
-      //    delayMicroseconds(15);
-        }
+    // SPI.transfer(0x64 & 0x7f );
+    for(int i = 0; i < 30; i++)
+    {
+    //  delayMicroseconds(100);
+      for(int i = 0; i < 29; i++)
+      {
         byte data = SPI.transfer(0);
         Serial.print(data);
-        Serial.print(";");
-     //   delayMicroseconds(15);
+        Serial.print(",");
+        // delayMicroseconds(15);
       }
-
-      adns_com_end();
-      delayMicroseconds(19); //  tSRW/tSRR (=20us) minus tSCLK-NCS
-
+      byte data = SPI.transfer(0);
+      Serial.print(data);
+      Serial.print(";");
+      // delayMicroseconds(15);
+    }
+    adns_com_end();
+    delayMicroseconds(19); //  tSRW/tSRR (=20us) minus tSCLK-NCS
   }
-
-
-  }
+}
 
 
 void performStartup(void){
