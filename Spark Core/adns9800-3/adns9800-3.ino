@@ -57,7 +57,7 @@ unsigned long pollTimer;
 volatile byte xydat[5];
 int16_t xydelt[2];
 volatile byte movementflag=0;
-const int ncs = 51; // Arduino pin that connects to SS on the ADNS
+const int ncs = 53; // Arduino pin that connects to SS on the ADNS
 
 extern unsigned char firmware_data[];
 unsigned short firmware_length = 3070; // more robust: firmware_length = sizeof(firmware_data)/sizeof(firmware_data[0])
@@ -66,7 +66,6 @@ unsigned short firmware_length = 3070; // more robust: firmware_length = sizeof(
 void setup()
 {
   Serial.begin(9600);
-  delay(5000);
 
   pinMode(ncs, OUTPUT);
 
@@ -289,9 +288,11 @@ void UpdatePointer(void)
 void dispRegisters(void)
 {
   int oreg[7] = {
-    0x00,0x3F,0x2A,0x02  };
+    0x00,0x3F,0x2A,0x02
+  };
   char* oregname[] = {
-    "Product_ID","Inverse_Product_ID","SROM_Version","Motion"  };
+    "Product_ID","Inverse_Product_ID","SROM_Version","Motion"
+  };
   byte regres;
 
   digitalWrite(ncs,LOW);
@@ -325,7 +326,7 @@ int convTwosComp(int b)
 
 void loop()
 {
-  /*
+/*
   currTime = millis();
 
   if(currTime > timer)
@@ -339,33 +340,52 @@ void loop()
     UpdatePointer();
     xydat[0] = convTwosComp(xydat[0]);
     xydat[1] = convTwosComp(xydat[1]);
-      if(xydat[0] != 0 || xydat[1] != 0)
-      {
-        Serial.print("x = ");
-        Serial.print(xydat[0]);
-        Serial.print(" | ");
-        Serial.print("y = ");
-        Serial.println(xydat[1]);
-      }
+    if(xydat[0] != 0 || xydat[1] != 0)
+    {
+      Serial.print("x = ");
+      Serial.print(xydat[0]);
+      Serial.print(" | ");
+      Serial.print("y = ");
+      Serial.println(xydat[1]);
+    }
     pollTimer = currTime + 10;
   }
-    */
-    
+*/
 
   UpdatePointer();
+  
+  xydat[0] = convTwosComp(xydat[0]);
+  xydat[1] = convTwosComp(xydat[1]);
+  Serial.print("xydat[0] = ");
+  Serial.println(xydat[0]);
+  
+  Serial.print("xydat[1] = ");
+  Serial.println(xydat[1]);
+  if(xydat[0] != 0 || xydat[1] != 0)
+  {
+    Serial.print("x = ");
+    Serial.print(xydat[0]);
+    Serial.print(" | ");
+    Serial.print("y = ");
+    Serial.println(xydat[1]);
+  }
     
+  Serial.print("xydelt = ");
+  Serial.println(xydelt[0]);
+
+/*
   //Serial.print("X = ");
   Serial.print(xydelt[0]);
   //Serial.print(" Y = ");
   Serial.print(xydelt[1]);
-    
-    
+*/
+
+/* 
   //Serial.print(" Time elapsed = ");
   Serial.println(millis()-timer);
   timer = millis();
+*/
 
     
   //adns_frame_capture();
-    
-
 }
