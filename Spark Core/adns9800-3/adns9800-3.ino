@@ -1,4 +1,5 @@
 #include <SPI.h>
+#include <avr/pgmspace.h>
 #include "ADNS9800_SROM_A4.h"
 // Registers
 #define REG_Product_ID                           0x00
@@ -49,19 +50,18 @@
 
 #define bitRead(value, bit) (((value) >> (bit)) & 0x01)
 
-byte initComplete=0;
-byte testctr=0;
-unsigned long currTime;
-unsigned long timer;
-unsigned long pollTimer;
+byte initComplete = 0;
+byte testctr = 0;
+unsigned long currTime = 0;
+unsigned long timer = 0;
+unsigned long pollTimer = 0;
 volatile byte xydat[5];
 int16_t xydelt[2];
 volatile byte movementflag=0;
 const int ncs = 53; // Arduino pin that connects to SS on the ADNS
 
-extern unsigned char firmware_data[];
-unsigned short firmware_length = 3070; // more robust: firmware_length = sizeof(firmware_data)/sizeof(firmware_data[0])
-
+extern const unsigned short firmware_length; 
+extern const unsigned char firmware_data[];
 
 void setup()
 {
@@ -82,7 +82,7 @@ void setup()
   initComplete=9;
   Serial.println("Setup Complete");
   
-  delay(1000000);
+  delay(1000);
 }
 
 // initiate communication between Arduino and ADNS
@@ -269,12 +269,12 @@ void UpdatePointer(void)
       xydat[1] = (byte)adns_read_reg(REG_Delta_Y_L);
       xydat[2] = (byte)adns_read_reg(REG_Delta_X_H);
       xydat[3] = (byte)adns_read_reg(REG_Delta_Y_H);
-      xydelt[0] = (int16_t)(xydat[2]<<8) | xydat[0];
-      xydelt[1] = (int16_t)(xydat[3]<<8) | xydat[1];
+      xydelt[0] = (int16_t)(xydat[2]<<8) | xydat[0]; // DELTA_X
+      xydelt[1] = (int16_t)(xydat[3]<<8) | xydat[1]; // DELTA_Y
     }
     else
     {
-      //Serial.println("No motion detected");
+      Serial.println("No motion detected");
       xydat[0] = 0;
       xydat[1] = 0;
       xydat[2] = 0;
@@ -326,6 +326,19 @@ int convTwosComp(int b)
 
 void loop()
 {
+  currTime = millis();
+  
+  if( currTime > pollTimer )
+  {
+    UpdatePointer();
+    Serial.write(13);
+    Serial.print("xydelt[0] = ");
+    Serial.println(xydelt[0]*1.0000000000F);
+    Serial.print("xydelt[1] = ");
+    Serial.println(xydelt[1]*1.0000000000F);
+    Serial.println();
+    pollTimer = currTime + 50;
+  }
 /*
   currTime = millis();
 
@@ -334,7 +347,9 @@ void loop()
     Serial.println(testctr++);
     timer = currTime + 2000;
   }
+*/
 
+/*
   if(currTime > pollTimer)
   {
     UpdatePointer();
@@ -352,6 +367,7 @@ void loop()
   }
 */
 
+/*
   UpdatePointer();
   
   xydat[0] = convTwosComp(xydat[0]);
@@ -372,6 +388,7 @@ void loop()
     
   Serial.print("xydelt = ");
   Serial.println(xydelt[0]);
+*/
 
 /*
   //Serial.print("X = ");
